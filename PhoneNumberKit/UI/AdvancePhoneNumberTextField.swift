@@ -324,6 +324,7 @@ open class AdvancePhoneNumberTextField: UITextField, UITextFieldDelegate {
             self.flagButton.accessibilityHint = String(format: selectedFormat, countryName)
         }
 //        let fontSize = (font ?? UIFont.preferredFont(forTextStyle: .body)).pointSize
+        
         self.flagButton.titleLabel?.font = UIFont.systemFont(ofSize: flagFontSize)
     }
 
