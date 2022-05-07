@@ -16,12 +16,10 @@ open class AdvancePhoneNumberTextField: UITextField, UITextFieldDelegate {
     @IBInspectable public var paddingLeft: CGFloat = 0
     @IBInspectable public var paddingRight: CGFloat = 0
     
-    @IBInspectable public var flagFontSize: CGFloat = 14
-
     open override func textRect(forBounds bounds: CGRect) -> CGRect {
-        return CGRect(x: bounds.origin.x + paddingLeft + 20,
+        return CGRect(x: bounds.origin.x + paddingLeft,
                       y: bounds.origin.y,
-                      width: bounds.size.width - paddingLeft - 20 - paddingRight,
+                      width: bounds.size.width - paddingLeft - paddingRight,
                       height: bounds.size.height)
     }
     
@@ -35,7 +33,8 @@ open class AdvancePhoneNumberTextField: UITextField, UITextFieldDelegate {
 
     public let phoneNumberKit: PhoneNumberKit
 
-    public lazy var flagButton = UIButton()
+    @IBOutlet
+    public weak var flagButton: UIButton!
 
     /// Override setText so number will be automatically formatted when setting text by code
     open override var text: String? {
@@ -96,8 +95,7 @@ open class AdvancePhoneNumberTextField: UITextField, UITextFieldDelegate {
     @IBInspectable
     public var withFlag: Bool = false {
         didSet {
-            leftView = self.withFlag ? self.flagButton : nil
-            leftViewMode = self.withFlag ? .always : .never
+            self.flagButton?.isHidden = !withFlag
             self.updateFlag()
         }
     }
@@ -142,16 +140,17 @@ open class AdvancePhoneNumberTextField: UITextField, UITextFieldDelegate {
         }
     }
     #endif
-    @IBInspectable
+
     private var _withDefaultPickerUI: Bool = false {
         didSet {
-            if #available(iOS 11.0, *), flagButton.actions(forTarget: self, forControlEvent: .touchUpInside) == nil {
-                flagButton.addTarget(self, action: #selector(didPressFlagButton), for: .touchUpInside)
+            if #available(iOS 11.0, *), flagButton?.actions(forTarget: self, forControlEvent: .touchUpInside) == nil {
+                flagButton?.addTarget(self, action: #selector(didPressFlagButton), for: .touchUpInside)
             }
         }
     }
 
     @available(iOS 11.0, *)
+    @IBInspectable
     public var withDefaultPickerUI: Bool {
         get { _withDefaultPickerUI }
         set { _withDefaultPickerUI = newValue }
@@ -225,14 +224,6 @@ open class AdvancePhoneNumberTextField: UITextField, UITextFieldDelegate {
         } catch {
             return nil
         }
-    }
-
-    open override func layoutSubviews() {
-        if self.withFlag { // update the width of the flagButton automatically, iOS <13 doesn't handle this for you
-            let width = self.flagButton.systemLayoutSizeFitting(bounds.size).width
-            self.flagButton.frame.size.width = width
-        }
-        super.layoutSubviews()
     }
 
     // MARK: Lifecycle
@@ -310,8 +301,8 @@ open class AdvancePhoneNumberTextField: UITextField, UITextFieldDelegate {
             .compactMap { UnicodeScalar(flagBase + $0.value)?.description }
             .joined()
 
-        self.flagButton.setTitle(flag + " ", for: .normal)
-        self.flagButton.accessibilityLabel = NSLocalizedString(
+        self.flagButton?.setTitle(flag, for: .normal)
+        self.flagButton?.accessibilityLabel = NSLocalizedString(
             "PhoneNumberKit.CountryCodePickerEntryButton.AccessibilityLabel",
             value: "Select your country code",
             comment: "Accessibility Label for Country Code Picker button")
@@ -321,11 +312,8 @@ open class AdvancePhoneNumberTextField: UITextField, UITextFieldDelegate {
                 "PhoneNumberKit.CountryCodePickerEntryButton.AccessibilityHint",
                 value: "%@ selected",
                 comment: "Accessiblity hint for currently selected country code")
-            self.flagButton.accessibilityHint = String(format: selectedFormat, countryName)
+            self.flagButton?.accessibilityHint = String(format: selectedFormat, countryName)
         }
-//        let fontSize = (font ?? UIFont.preferredFont(forTextStyle: .body)).pointSize
-        
-        self.flagButton.titleLabel?.font = UIFont.systemFont(ofSize: flagFontSize)
     }
 
     open func updatePlaceholder() {
