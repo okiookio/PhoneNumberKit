@@ -16,14 +16,16 @@ open class AdvancePhoneNumberTextField: UITextField, UITextFieldDelegate {
     @IBInspectable public var paddingLeft: CGFloat = 0
     @IBInspectable public var paddingRight: CGFloat = 0
     
-    override func textRect(forBounds bounds: CGRect) -> CGRect {
+    @IBInspectable public var flagFontSize: CGFloat = 14
+
+    open override func textRect(forBounds bounds: CGRect) -> CGRect {
         return CGRect(x: bounds.origin.x + paddingLeft + 20,
                       y: bounds.origin.y,
                       width: bounds.size.width - paddingLeft - 20 - paddingRight,
                       height: bounds.size.height)
     }
     
-    override func editingRect(forBounds bounds: CGRect) -> CGRect {
+    open override func editingRect(forBounds bounds: CGRect) -> CGRect {
         return textRect(forBounds: bounds)
     }
 
@@ -77,7 +79,7 @@ open class AdvancePhoneNumberTextField: UITextField, UITextFieldDelegate {
         }
     }
 
-    @IBInspectable 
+    @IBInspectable
     public var withPrefix: Bool = true {
         didSet {
             self.partialFormatter.withPrefix = self.withPrefix
@@ -91,7 +93,7 @@ open class AdvancePhoneNumberTextField: UITextField, UITextFieldDelegate {
             }
         }
     }
-    @IBInspectable 
+    @IBInspectable
     public var withFlag: Bool = false {
         didSet {
             leftView = self.withFlag ? self.flagButton : nil
@@ -100,7 +102,7 @@ open class AdvancePhoneNumberTextField: UITextField, UITextFieldDelegate {
         }
     }
 
-    @IBInspectable 
+    @IBInspectable
     public var withExamplePlaceholder: Bool = false {
         didSet {
             if self.withExamplePlaceholder {
@@ -113,7 +115,7 @@ open class AdvancePhoneNumberTextField: UITextField, UITextFieldDelegate {
 
     #if compiler(>=5.1)
     /// Available on iOS 13 and above just.
-    @IBInspectable 
+    @IBInspectable
     public var countryCodePlaceholderColor: UIColor = {
         if #available(iOS 13.0, tvOS 13.0, *) {
             return .secondaryLabel
@@ -127,7 +129,7 @@ open class AdvancePhoneNumberTextField: UITextField, UITextFieldDelegate {
     }
 
     /// Available on iOS 13 and above just.
-    @IBInspectable 
+    @IBInspectable
     public var numberPlaceholderColor: UIColor = {
         if #available(iOS 13.0, tvOS 13.0, *) {
             return .tertiaryLabel
@@ -140,7 +142,7 @@ open class AdvancePhoneNumberTextField: UITextField, UITextFieldDelegate {
         }
     }
     #endif
-    @IBInspectable 
+    @IBInspectable
     private var _withDefaultPickerUI: Bool = false {
         didSet {
             if #available(iOS 11.0, *), flagButton.actions(forTarget: self, forControlEvent: .touchUpInside) == nil {
@@ -157,7 +159,7 @@ open class AdvancePhoneNumberTextField: UITextField, UITextFieldDelegate {
     
     public var modalPresentationStyle: UIModalPresentationStyle?
 
-    @IBInspectable 
+    @IBInspectable
     public var isPartialFormatterEnabled = true
 
     public var maxDigits: Int? {
@@ -321,8 +323,8 @@ open class AdvancePhoneNumberTextField: UITextField, UITextFieldDelegate {
                 comment: "Accessiblity hint for currently selected country code")
             self.flagButton.accessibilityHint = String(format: selectedFormat, countryName)
         }
-        let fontSize = (font ?? UIFont.preferredFont(forTextStyle: .body)).pointSize
-        self.flagButton.titleLabel?.font = UIFont.systemFont(ofSize: fontSize)
+//        let fontSize = (font ?? UIFont.preferredFont(forTextStyle: .body)).pointSize
+        self.flagButton.titleLabel?.font = UIFont.systemFont(ofSize: flagFontSize)
     }
 
     open func updatePlaceholder() {
@@ -556,12 +558,6 @@ extension AdvancePhoneNumberTextField: CountryCodePickerDelegate {
             containingViewController?.dismiss(animated: true)
         }
     }
-}
-
-extension String {
-  var isBlank: Bool {
-    return allSatisfy({ $0.isWhitespace })
-  }
 }
 
 #endif
