@@ -17,6 +17,7 @@ open class AdvancePhoneNumberTextField: UITextField, UITextFieldDelegate {
     @IBInspectable public var paddingRight: CGFloat = 0
     
     open override func textRect(forBounds bounds: CGRect) -> CGRect {
+        let paddingLeft: CGFloat = paddingLeft + (withFlag ? self.bounds.size.height : 0)
         return CGRect(x: bounds.origin.x + paddingLeft,
                       y: bounds.origin.y,
                       width: bounds.size.width - paddingLeft - paddingRight,
@@ -26,15 +27,23 @@ open class AdvancePhoneNumberTextField: UITextField, UITextFieldDelegate {
     open override func editingRect(forBounds bounds: CGRect) -> CGRect {
         return textRect(forBounds: bounds)
     }
-
+    
     var phoneText: String? {
         return phoneNumber?.numberString
     }
-
+    
     public let phoneNumberKit: PhoneNumberKit
-
-    @IBOutlet
-    public weak var flagButton: UIButton!
+    
+    @IBInspectable public var flagButtonFontSize: CGFloat = 14 {
+        didSet {
+            flagButton.titleLabel?.font = UIFont.systemFont(ofSize: flagButtonFontSize)
+        }
+    }
+    public lazy var flagButton: UIButton = {
+        let button = UIButton()
+        button.titleLabel?.font = UIFont.systemFont(ofSize: flagButtonFontSize)
+        return button
+    }()
 
     /// Override setText so number will be automatically formatted when setting text by code
     open override var text: String? {
@@ -52,14 +61,14 @@ open class AdvancePhoneNumberTextField: UITextField, UITextFieldDelegate {
             return super.text
         }
     }
-
+    
     /// allows text to be set without formatting
     open func setTextUnformatted(newValue: String?) {
         super.text = newValue
     }
-
+    
     private lazy var _defaultRegion: String = PhoneNumberKit.defaultRegionCode()
-
+    
     /// Override region to set a custom region. Automatically uses the default region code.
     open var defaultRegion: String {
         get {
@@ -67,8 +76,8 @@ open class AdvancePhoneNumberTextField: UITextField, UITextFieldDelegate {
         }
         @available(
             *,
-            deprecated,
-            message: """
+             deprecated,
+             message: """
                 The setter of defaultRegion is deprecated,
                 please override defaultRegion in a subclass instead.
             """
@@ -77,7 +86,7 @@ open class AdvancePhoneNumberTextField: UITextField, UITextFieldDelegate {
             self.partialFormatter.defaultRegion = newValue
         }
     }
-
+    
     @IBInspectable
     public var withPrefix: Bool = true {
         didSet {
@@ -95,11 +104,27 @@ open class AdvancePhoneNumberTextField: UITextField, UITextFieldDelegate {
     @IBInspectable
     public var withFlag: Bool = false {
         didSet {
-            self.flagButton?.isHidden = !withFlag
+            leftView = self.withFlag ? self.updateOuterView(padding: paddingLeft, size: self.frame.height) : nil
+            leftViewMode = self.withFlag ? .always : .never
             self.updateFlag()
         }
     }
-
+    
+    private lazy var outerView: UIView = {
+        let padding = paddingLeft
+        let size = self.frame.height
+        let outerView = UIView(frame: CGRect(x: 0, y: 0, width: size+padding, height: size) )
+        flagButton.frame = CGRect(x: padding, y: 0, width: size, height: size)
+        outerView.addSubview(flagButton)
+        return outerView
+    }()
+    
+    private func updateOuterView(padding: CGFloat, size: CGFloat) -> UIView {
+        outerView.frame = CGRect(x: 0, y: 0, width: size+padding, height: size)
+        flagButton.frame = CGRect(x: padding, y: 0, width: size, height: size)
+        return outerView
+    }
+    
     @IBInspectable
     public var withExamplePlaceholder: Bool = false {
         didSet {
@@ -110,8 +135,8 @@ open class AdvancePhoneNumberTextField: UITextField, UITextFieldDelegate {
             }
         }
     }
-
-    #if compiler(>=5.1)
+    
+#if compiler(>=5.1)
     /// Available on iOS 13 and above just.
     @IBInspectable
     public var countryCodePlaceholderColor: UIColor = {
@@ -125,7 +150,7 @@ open class AdvancePhoneNumberTextField: UITextField, UITextFieldDelegate {
             self.updatePlaceholder()
         }
     }
-
+    
     /// Available on iOS 13 and above just.
     @IBInspectable
     public var numberPlaceholderColor: UIColor = {
@@ -139,16 +164,16 @@ open class AdvancePhoneNumberTextField: UITextField, UITextFieldDelegate {
             self.updatePlaceholder()
         }
     }
-    #endif
-
+#endif
+    
     private var _withDefaultPickerUI: Bool = false {
         didSet {
-            if #available(iOS 11.0, *), flagButton?.actions(forTarget: self, forControlEvent: .touchUpInside) == nil {
-                flagButton?.addTarget(self, action: #selector(didPressFlagButton), for: .touchUpInside)
+            if #available(iOS 11.0, *), flagButton.actions(forTarget: self, forControlEvent: .touchUpInside) == nil {
+                flagButton.addTarget(self, action: #selector(didPressFlagButton), for: .touchUpInside)
             }
         }
     }
-
+    
     @available(iOS 11.0, *)
     @IBInspectable
     public var withDefaultPickerUI: Bool {
@@ -157,22 +182,22 @@ open class AdvancePhoneNumberTextField: UITextField, UITextFieldDelegate {
     }
     
     public var modalPresentationStyle: UIModalPresentationStyle?
-
+    
     @IBInspectable
     public var isPartialFormatterEnabled = true
-
+    
     public var maxDigits: Int? {
         didSet {
             self.partialFormatter.maxDigits = self.maxDigits
         }
     }
-
+    
     public private(set) lazy var partialFormatter: PartialFormatter = PartialFormatter(
         phoneNumberKit: phoneNumberKit,
         defaultRegion: defaultRegion,
         withPrefix: withPrefix
     )
-
+    
     let nonNumericSet: CharacterSet = {
         var mutableSet = CharacterSet.decimalDigits.inverted
         mutableSet.remove(charactersIn: PhoneNumberConstants.plusChars)
@@ -180,9 +205,9 @@ open class AdvancePhoneNumberTextField: UITextField, UITextFieldDelegate {
         mutableSet.remove(charactersIn: PhoneNumberConstants.operatorChars)
         return mutableSet
     }()
-
+    
     private weak var _delegate: UITextFieldDelegate?
-
+    
     open override var delegate: UITextFieldDelegate? {
         get {
             return self._delegate
@@ -191,18 +216,18 @@ open class AdvancePhoneNumberTextField: UITextField, UITextFieldDelegate {
             self._delegate = newValue
         }
     }
-
+    
     // MARK: Status
-
+    
     public var currentRegion: String {
         return self.partialFormatter.currentRegion
     }
-
+    
     public var nationalNumber: String {
         let rawNumber = self.text ?? String()
         return self.partialFormatter.nationalNumber(from: rawNumber)
     }
-
+    
     public var isValidNumber: Bool {
         let rawNumber = self.text ?? String()
         do {
@@ -212,7 +237,7 @@ open class AdvancePhoneNumberTextField: UITextField, UITextFieldDelegate {
             return false
         }
     }
-
+    
     /**
      Returns the current valid phone number.
      - returns: PhoneNumber?
@@ -225,27 +250,27 @@ open class AdvancePhoneNumberTextField: UITextField, UITextFieldDelegate {
             return nil
         }
     }
-
+    
     // MARK: Lifecycle
-
+    
     /**
      Init with a phone number kit instance. Because a PhoneNumberKit initialization is expensive,
      you can pass a pre-initialized instance to avoid incurring perf penalties.
-
+     
      - parameter phoneNumberKit: A PhoneNumberKit instance to be used by the text field.
-
+     
      - returns: UITextfield
      */
     public convenience init(withPhoneNumberKit phoneNumberKit: PhoneNumberKit) {
         self.init(frame: .zero, phoneNumberKit: phoneNumberKit)
     }
-
+    
     /**
      Init with frame and phone number kit instance.
-
+     
      - parameter frame: UITextfield frame
      - parameter phoneNumberKit: A PhoneNumberKit instance to be used by the text field.
-
+     
      - returns: UITextfield
      */
     public init(frame: CGRect, phoneNumberKit: PhoneNumberKit) {
@@ -253,12 +278,12 @@ open class AdvancePhoneNumberTextField: UITextField, UITextFieldDelegate {
         super.init(frame: frame)
         self.setup()
     }
-
+    
     /**
      Init with frame
-
+     
      - parameter frame: UITextfield F
-
+     
      - returns: UITextfield
      */
     public override init(frame: CGRect) {
@@ -266,12 +291,12 @@ open class AdvancePhoneNumberTextField: UITextField, UITextFieldDelegate {
         super.init(frame: frame)
         self.setup()
     }
-
+    
     /**
      Init with coder
-
+     
      - parameter aDecoder: decoder
-
+     
      - returns: UITextfield
      */
     public required init(coder aDecoder: NSCoder) {
@@ -279,67 +304,70 @@ open class AdvancePhoneNumberTextField: UITextField, UITextFieldDelegate {
         super.init(coder: aDecoder)!
         self.setup()
     }
-
+    
     func setup() {
         self.autocorrectionType = .no
         self.keyboardType = .phonePad
         super.delegate = self
+        self.updateFlag()
     }
-
+    
     func internationalPrefix(for countryCode: String) -> String? {
         guard let countryCode = phoneNumberKit.countryCode(for: currentRegion)?.description else { return nil }
         return "+" + countryCode
     }
-
+    
     open func updateFlag() {
         guard self.withFlag else { return }
         let flagBase = UnicodeScalar("🇦").value - UnicodeScalar("A").value
-
+        
         let flag = self.currentRegion
             .uppercased()
             .unicodeScalars
             .compactMap { UnicodeScalar(flagBase + $0.value)?.description }
             .joined()
-
-        self.flagButton?.setTitle(flag, for: .normal)
-        self.flagButton?.accessibilityLabel = NSLocalizedString(
+        
+        self.flagButton.setTitle(flag, for: .normal)
+        self.flagButton.accessibilityLabel = NSLocalizedString(
             "PhoneNumberKit.CountryCodePickerEntryButton.AccessibilityLabel",
             value: "Select your country code",
             comment: "Accessibility Label for Country Code Picker button")
-
+        
         if let countryName = Locale.autoupdatingCurrent.localizedString(forRegionCode: self.currentRegion) {
             let selectedFormat = NSLocalizedString(
                 "PhoneNumberKit.CountryCodePickerEntryButton.AccessibilityHint",
                 value: "%@ selected",
                 comment: "Accessiblity hint for currently selected country code")
-            self.flagButton?.accessibilityHint = String(format: selectedFormat, countryName)
+            self.flagButton.accessibilityHint = String(format: selectedFormat, countryName)
         }
-    }
 
+        self.flagButton.titleLabel?.font = UIFont.systemFont(ofSize: flagButtonFontSize)
+    }
+    
     open func updatePlaceholder() {
         guard self.withExamplePlaceholder else { return }
         if isEditing, !(self.text ?? "").isEmpty { return } // No need to update a placeholder while the placeholder isn't showing
-
+        
         let format = self.withPrefix ? PhoneNumberFormat.international : .national
         let example = self.phoneNumberKit.getFormattedExampleNumber(forCountry: self.currentRegion, withFormat: format, withPrefix: self.withPrefix) ?? "12345678"
         let font = self.font ?? UIFont.preferredFont(forTextStyle: .body)
         let ph = NSMutableAttributedString(string: example, attributes: [.font: font])
-
-        #if compiler(>=5.1)
+        
+#if compiler(>=5.1)
         if #available(iOS 13.0, *), self.withPrefix {
             // because the textfield will automatically handle insert & removal of the international prefix we make the
             // prefix darker to indicate non default behaviour to users, this behaviour currently only happens on iOS 13
             // and above just because that is where we have access to label colors
             let firstSpaceIndex = example.firstIndex(where: { $0 == " " }) ?? example.startIndex
-
+            
             ph.addAttribute(.foregroundColor, value: self.countryCodePlaceholderColor, range: NSRange(..<firstSpaceIndex, in: example))
             ph.addAttribute(.foregroundColor, value: self.numberPlaceholderColor, range: NSRange(firstSpaceIndex..., in: example))
         }
-        #endif
-
+#endif
+        
         self.attributedPlaceholder = ph
     }
-
+    
     @available(iOS 11.0, *)
     @objc func didPressFlagButton() {
         guard withDefaultPickerUI else { return }
@@ -355,7 +383,7 @@ open class AdvancePhoneNumberTextField: UITextField, UITextFieldDelegate {
             containingViewController?.present(nav, animated: true)
         }
     }
-
+    
     /// containingViewController looks at the responder chain to find the view controller nearest to itself
     var containingViewController: UIViewController? {
         var responder: UIResponder? = self
@@ -364,19 +392,19 @@ open class AdvancePhoneNumberTextField: UITextField, UITextFieldDelegate {
         }
         return (responder as? UIViewController)
     }
-
-
+    
+    
     // MARK: Phone number formatting
-
+    
     /**
      *  To keep the cursor position, we find the character immediately after the cursor and count the number of times it repeats in the remaining string as this will remain constant in every kind of editing.
      */
-
+    
     internal struct CursorPosition {
         let numberAfterCursor: String
         let repetitionCountFromEnd: Int
     }
-
+    
     internal func extractCursorPosition() -> CursorPosition? {
         var repetitionCountFromEnd = 0
         // Check that there is text in the UITextField
@@ -401,7 +429,7 @@ open class AdvancePhoneNumberTextField: UITextField, UITextFieldDelegate {
         }
         return nil
     }
-
+    
     // Finds position of previous cursor in new formatted text
     internal func selectionRangeForNumberReplacement(textField: UITextField, formattedText: String) -> NSRange? {
         let textAsNSString = formattedText as NSString
@@ -409,7 +437,7 @@ open class AdvancePhoneNumberTextField: UITextField, UITextFieldDelegate {
         guard let cursorPosition = extractCursorPosition() else {
             return nil
         }
-
+        
         for i in stride(from: textAsNSString.length - 1, through: 0, by: -1) {
             let candidateRange = NSRange(location: i, length: 1)
             let candidateCharacter = textAsNSString.substring(with: candidateRange)
@@ -420,20 +448,20 @@ open class AdvancePhoneNumberTextField: UITextField, UITextFieldDelegate {
                 }
             }
         }
-
+        
         return nil
     }
-
+    
     open func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
         // This allows for the case when a user autocompletes a phone number:
         if range == NSRange(location: 0, length: 0) && string.isBlank {
             return true
         }
-
+        
         guard let text = text else {
             return false
         }
-
+        
         // allow delegate to intervene
         guard self._delegate?.textField?(textField, shouldChangeCharactersIn: range, replacementString: string) ?? true else {
             return false
@@ -441,19 +469,19 @@ open class AdvancePhoneNumberTextField: UITextField, UITextFieldDelegate {
         guard self.isPartialFormatterEnabled else {
             return true
         }
-
+        
         let textAsNSString = text as NSString
         let changedRange = textAsNSString.substring(with: range) as NSString
         let modifiedTextField = textAsNSString.replacingCharacters(in: range, with: string)
-
+        
         let filteredCharacters = modifiedTextField.filter {
             String($0).rangeOfCharacter(from: (textField as! AdvancePhoneNumberTextField).nonNumericSet) == nil
         }
         let rawNumberString = String(filteredCharacters)
-
+        
         let formattedNationalNumber = self.partialFormatter.formatPartial(rawNumberString as String)
         var selectedTextRange: NSRange?
-
+        
         let nonNumericRange = (changedRange.rangeOfCharacter(from: self.nonNumericSet).location != NSNotFound)
         if range.length == 1, string.isEmpty, nonNumericRange {
             selectedTextRange = self.selectionRangeForNumberReplacement(textField: textField, formattedText: modifiedTextField)
@@ -467,38 +495,38 @@ open class AdvancePhoneNumberTextField: UITextField, UITextFieldDelegate {
             let selectionRange = textField.textRange(from: selectionRangePosition, to: selectionRangePosition)
             textField.selectedTextRange = selectionRange
         }
-
+        
         // we change the default region to be the one most recently typed
         self._defaultRegion = self.currentRegion
         self.partialFormatter.defaultRegion = self.currentRegion
         self.updateFlag()
         self.updatePlaceholder()
-
+        
         return false
     }
-
+    
     // MARK: UITextfield Delegate
-
+    
     open func textFieldShouldBeginEditing(_ textField: UITextField) -> Bool {
         return self._delegate?.textFieldShouldBeginEditing?(textField) ?? true
     }
-
+    
     open func textFieldDidBeginEditing(_ textField: UITextField) {
         if self.withExamplePlaceholder, self.withPrefix, let countryCode = phoneNumberKit.countryCode(for: currentRegion)?.description, (text ?? "").isEmpty {
             text = "+" + countryCode + " "
         }
         self._delegate?.textFieldDidBeginEditing?(textField)
     }
-
+    
     open func textFieldShouldEndEditing(_ textField: UITextField) -> Bool {
         return self._delegate?.textFieldShouldEndEditing?(textField) ?? true
     }
-
+    
     open func textFieldDidEndEditing(_ textField: UITextField) {
         updateTextFieldDidEndEditing(textField)
         self._delegate?.textFieldDidEndEditing?(textField)
     }
-
+    
     @available (iOS 10.0, tvOS 10.0, *)
     open func textFieldDidEndEditing(_ textField: UITextField, reason: UITextField.DidEndEditingReason) {
         updateTextFieldDidEndEditing(textField)
@@ -510,19 +538,19 @@ open class AdvancePhoneNumberTextField: UITextField, UITextFieldDelegate {
             }
         }
     }
-
+    
     open func textFieldShouldClear(_ textField: UITextField) -> Bool {
         return self._delegate?.textFieldShouldClear?(textField) ?? true
     }
-
+    
     open func textFieldShouldReturn(_ textField: UITextField) -> Bool {
         return self._delegate?.textFieldShouldReturn?(textField) ?? true
     }
-
+    
     private func updateTextFieldDidEndEditing(_ textField: UITextField) {
         if self.withExamplePlaceholder, self.withPrefix, let countryCode = phoneNumberKit.countryCode(for: currentRegion)?.description,
-            let text = textField.text,
-            text == internationalPrefix(for: countryCode) {
+           let text = textField.text,
+           text == internationalPrefix(for: countryCode) {
             textField.text = ""
             sendActions(for: .editingChanged)
             self.updateFlag()
@@ -533,14 +561,14 @@ open class AdvancePhoneNumberTextField: UITextField, UITextFieldDelegate {
 
 @available(iOS 11.0, *)
 extension AdvancePhoneNumberTextField: CountryCodePickerDelegate {
-
+    
     public func countryCodePickerViewControllerDidPickCountry(_ country: CountryCodePickerViewController.Country) {
         text = isEditing ? "+" + country.prefix : ""
         _defaultRegion = country.code
         partialFormatter.defaultRegion = country.code
         updateFlag()
         updatePlaceholder()
-
+        
         if let nav = containingViewController?.navigationController, !PhoneNumberKit.CountryCodePicker.forceModalPresentation {
             nav.popViewController(animated: true)
         } else {
@@ -550,3 +578,16 @@ extension AdvancePhoneNumberTextField: CountryCodePickerDelegate {
 }
 
 #endif
+
+private extension AdvancePhoneNumberTextField {
+    
+    func getLeftButtonView(_ button: UIButton, padding: CGFloat, size: CGFloat) -> UIView {
+        
+        let outerView = UIView(frame: CGRect(x: 0, y: 0, width: size+padding, height: size) )
+        
+        button.frame = CGRect(x: padding, y: 0, width: size, height: size)
+        outerView.addSubview(button)
+        
+        return outerView
+    }
+}
