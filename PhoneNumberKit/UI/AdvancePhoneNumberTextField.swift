@@ -28,7 +28,7 @@ open class AdvancePhoneNumberTextField: UITextField, UITextFieldDelegate {
         return textRect(forBounds: bounds)
     }
     
-    var phoneText: String? {
+    public var phoneText: String? {
         return phoneNumber?.numberString
     }
     
